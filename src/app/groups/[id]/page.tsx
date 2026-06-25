@@ -37,7 +37,33 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [selectedStudent, setSelectedStudent] = useState('');
   const [adding, setAdding] = useState(false);
 
+  const [exportDate, setExportDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [exporting, setExporting] = useState(false);
+
   const canEdit = user?.role === 'super_admin' || user?.role === 'branch_admin';
+  const canTakeAttendance = user?.role === 'teacher' || user?.role === 'super_admin' || user?.role === 'branch_admin';
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const res = await window.fetch(`${base}/api/attendance/export?group_id=${id}&date=${exportDate}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-${exportDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { toast((e as Error).message, 'error'); }
+    finally { setExporting(false); }
+  };
 
   const fetchGroup = async () => {
     setLoading(true);
@@ -82,9 +108,9 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-20">
-          <svg className="animate-spin h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          <svg className="animate-spin h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         </div>
       </DashboardLayout>
@@ -95,63 +121,128 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           {t('common.back')}
         </Button>
 
-        {/* Group info */}
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{group.name}</h1>
-              <p className="text-sm text-gray-400 mt-0.5">{group.branch_name}</p>
-            </div>
-            <Badge variant={group.is_active ? 'success' : 'default'}>
-              {group.is_active ? t('common.active') : t('common.inactive')}
-            </Badge>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-            <div>
-              <p className="text-xs text-gray-400">{t('groups.teacher')}</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{group.teacher_name || '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">{t('groups.capacity')}</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{group.students.length}/{group.max_students}</p>
-            </div>
-          </div>
-
-          {/* Teacher action: take attendance */}
-          {(user?.role === 'teacher' || user?.role === 'super_admin' || user?.role === 'branch_admin') && (
-            <div className="mt-4 flex gap-2">
-              <Link href={`/attendance/take?group=${id}`}>
-                <Button size="sm">
+        {/* Group Info Card */}
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div className="p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span className="text-indigo-600 dark:text-indigo-400">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </span>
+                  {group.name}
+                </h1>
+                <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
-                  {t('attendance.takeAttendance')}
-                </Button>
-              </Link>
+                  {group.branch_name}
+                </div>
+              </div>
+              <Badge variant={group.is_active ? 'success' : 'default'} className="text-sm px-3 py-1">
+                {group.is_active ? t('common.active') : t('common.inactive')}
+              </Badge>
             </div>
-          )}
+
+            {/* Stats - simplified colors */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('groups.teacher')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                  {group.teacher_name || '—'}
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('groups.capacity')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                  {group.students.length}/{group.max_students}
+                </p>
+              </div>
+              {/* <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('groups.students')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                  {group.students.length}
+                </p>
+              </div> */}
+              {/* <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('schedule.sessions')}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
+                  {group.schedules.length}
+                </p>
+              </div> */}
+            </div>
+
+            {/* Actions */}
+            {canTakeAttendance && (
+              <div className="mt-5 flex flex-wrap items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <Link href={`/attendance/group/${id}`}>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    {t('attendance.register')}
+                  </Button>
+                </Link>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <input
+                    type="date"
+                    value={exportDate}
+                    onChange={e => setExportDate(e.target.value)}
+                    className="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleExport}
+                    loading={exporting}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {t('attendance.exportExcel')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Schedule */}
         {group.schedules.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
-            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('schedule.title')}</h2>
             </div>
-            <div className="p-4 flex flex-wrap gap-3">
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {group.schedules.map(s => (
-                <div key={s.id} className="bg-indigo-50 dark:bg-indigo-900/20 rounded px-3 py-2 text-sm">
+                <div key={s.id} className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800/30">
                   <div className="font-medium text-indigo-700 dark:text-indigo-300">{getDayName(s.day_of_week, t)}</div>
-                  <div className="text-indigo-600 dark:text-indigo-400">{formatTime(s.start_time)} — {formatTime(s.end_time)}</div>
-                  {s.classroom && <div className="text-xs text-gray-400">{s.classroom}</div>}
+                  <div className="text-sm text-gray-700 dark:text-gray-300">{formatTime(s.start_time)} — {formatTime(s.end_time)}</div>
+                  {s.classroom && <div className="text-xs text-gray-400 mt-1 flex"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-door-open" viewBox="0 0 16 16">
+                    <path d="M8.5 10c-.276 0-.5-.448-.5-1s.224-1 .5-1 .5.448.5 1-.224 1-.5 1" />
+                    <path d="M10.828.122A.5.5 0 0 1 11 .5V1h.5A1.5 1.5 0 0 1 13 2.5V15h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V1.5a.5.5 0 0 1 .43-.495l7-1a.5.5 0 0 1 .398.117M11.5 2H11v13h1V2.5a.5.5 0 0 0-.5-.5M4 1.934V15h6V1.077z" />
+                  </svg>  {s.classroom}</div>}
                 </div>
               ))}
             </div>
@@ -159,14 +250,24 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Students */}
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-              {t('groups.enrolledStudents')} ({group.students.length})
-            </h2>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                {t('groups.enrolledStudents')} ({group.students.length})
+              </h2>
+            </div>
             {canEdit && (
-              <Button variant="outline" size="sm" onClick={openAddStudent}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openAddStudent}
+                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 {t('groups.addStudent')}
@@ -175,10 +276,15 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {group.students.length === 0 ? (
-              <div className="px-5 py-8 text-center text-sm text-gray-400">{t('common.noData')}</div>
+              <div className="px-5 py-10 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
+                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                <span>{t('common.noData')}</span>
+              </div>
             ) : (
               group.students.map(s => (
-                <div key={s.id} className="px-5 py-3 flex items-center justify-between">
+                <div key={s.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Avatar firstName={s.first_name} lastName={s.last_name} avatarUrl={s.avatar_url} size="sm" />
                     <div>
@@ -186,9 +292,9 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                       <p className="text-xs text-gray-400">@{s.username}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <Link href={`/users/${s.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -196,7 +302,12 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                       </Button>
                     </Link>
                     {canEdit && (
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => handleRemoveStudent(s.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveStudent(s.id)}
+                        className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg"
+                      >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -219,9 +330,18 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           placeholder="Select a student"
           options={availableStudents.map(s => ({ value: s.id, label: `${s.first_name} ${s.last_name} (@${s.username})` }))}
         />
-        <div className="flex gap-3 justify-end mt-4">
-          <Button variant="outline" onClick={() => setAddStudentOpen(false)} disabled={adding}>{t('common.cancel')}</Button>
-          <Button onClick={handleAddStudent} loading={adding} disabled={!selectedStudent}>{t('common.add')}</Button>
+        <div className="flex gap-3 justify-end mt-5">
+          <Button variant="outline" onClick={() => setAddStudentOpen(false)} disabled={adding}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleAddStudent}
+            loading={adding}
+            disabled={!selectedStudent}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            {t('common.add')}
+          </Button>
         </div>
       </Modal>
     </DashboardLayout>

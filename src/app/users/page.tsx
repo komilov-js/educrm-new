@@ -265,7 +265,7 @@ export default function UsersPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           <Table columns={columns} data={users} loading={loading} getKey={u => u.id} emptyMessage={t('common.noData')} />
           <Pagination page={page} pages={pages} total={total} limit={limit} onChange={setPage} t={t} />
         </div>

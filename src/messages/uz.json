@@ -25,6 +25,7 @@
     "of": "dan",
     "rows": "qator",
     "total": "Jami",
+    "viewAll": "Barchasi",
     "create": "Yaratish",
     "update": "Yangilash",
     "view": "Ko'rish",
@@ -74,6 +75,7 @@
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",
+    "directions": "Yo'nalishlar",
     "users": "Foydalanuvchilar",
     "branches": "Filiallar",
     "groups": "Guruhlar",
@@ -110,9 +112,31 @@
     "students": "Talabalar",
     "teachers": "O'qituvchilar",
     "groups": "Guruhlar",
+    "logo": "Filial logotipi",
+    "uploadLogo": "Yuklash",
+    "logoHint": "PNG, JPG yoki WEBP, 5MB gacha",
+    "currentLogo": "Joriy logotip",
+    "direction": "Yo'nalish",
+    "noDirection": "Yo'nalishsiz",
+    "colors": "Karta ranglari",
     "created": "Filial muvaffaqiyatli yaratildi",
     "updated": "Filial muvaffaqiyatli yangilandi",
     "deleted": "Filial muvaffaqiyatli o'chirildi"
+  },
+  "directions": {
+    "title": "Yo'nalishlar",
+    "add": "Yo'nalish qo'shish",
+    "edit": "Yo'nalishni tahrirlash",
+    "delete": "Yo'nalishni o'chirish",
+    "deleteConfirm": "Bu yo'nalishni o'chirishni xohlaysizmi?",
+    "name": "Yo'nalish nomi",
+    "description": "Tavsif",
+    "color": "Rang",
+    "branches": "Filiallar",
+    "branchesIn": "Ushbu yo'nalishdagi filiallar",
+    "created": "Yo'nalish muvaffaqiyatli yaratildi",
+    "updated": "Yo'nalish muvaffaqiyatli yangilandi",
+    "deleted": "Yo'nalish muvaffaqiyatli o'chirildi"
   },
   "users": {
     "title": "Foydalanuvchilar",
@@ -155,6 +179,9 @@
   "attendance": {
     "title": "Davomat",
     "takeAttendance": "Davomat olish",
+    "selectGroup": "Guruhni tanlang",
+    "openRegister": "Jurnalni ochish",
+    "noGroups": "Guruhlar mavjud emas",
     "attendanceFor": "Davomat:",
     "sessionDate": "Dars sanasi",
     "classStart": "Dars boshlanish vaqti",
@@ -173,7 +200,20 @@
     "totalAbsent": "Jami kelmadi",
     "totalLate": "Jami kech keldi",
     "avgLateMinutes": "O'rt. kechikish (daqiqa)",
-    "noSessions": "Darslar topilmadi"
+    "noSessions": "Darslar topilmadi",
+    "register": "Davomat jurnali",
+    "exportExcel": "Excel yuklab olish",
+    "selectDate": "Sanani tanlang",
+    "noSchedule": "Bu guruh uchun dars jadvali yo'q. Davomat olish uchun jadval qo'shing.",
+    "noStudents": "Bu guruhda hali o'quvchilar yo'q.",
+    "marked": "Belgilangan",
+    "legend": "Katakni bosing: keldi → kech qoldi → kelmadi",
+    "prevMonth": "Oldingi oy",
+    "nextMonth": "Keyingi oy",
+    "unmarked": "Belgilanmagan",
+    "markAllPresent": "Hammasini keldi",
+    "saved": "Saqlandi",
+    "noDates": "Bu oyda dars kunlari yo'q."
   },
   "schedule": {
     "title": "Dars jadvali",
@@ -220,6 +260,7 @@
     "notFound": "So'ralgan resurs topilmadi.",
     "required": "Bu maydon majburiy.",
     "minLength": "Kamida {min} ta belgi bo'lishi kerak.",
-    "passwordMismatch": "Parollar mos kelmaydi."
+    "passwordMismatch": "Parollar mos kelmaydi.",
+    "fileTooLarge": "Fayl juda katta. Maksimal hajmi 5MB."
   }
 }

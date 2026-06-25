@@ -25,6 +25,7 @@
     "of": "of",
     "rows": "rows",
     "total": "Total",
+    "viewAll": "View all",
     "create": "Create",
     "update": "Update",
     "view": "View",
@@ -74,6 +75,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "directions": "Directions",
     "users": "Users",
     "branches": "Branches",
     "groups": "Groups",
@@ -110,9 +112,31 @@
     "students": "Students",
     "teachers": "Teachers",
     "groups": "Groups",
+    "logo": "Branch Logo",
+    "uploadLogo": "Upload",
+    "logoHint": "PNG, JPG or WEBP, up to 5MB",
+    "currentLogo": "Current logo",
+    "direction": "Direction",
+    "noDirection": "No direction",
+    "colors": "Card colors",
     "created": "Branch created successfully",
     "updated": "Branch updated successfully",
     "deleted": "Branch deleted successfully"
+  },
+  "directions": {
+    "title": "Directions",
+    "add": "Add Direction",
+    "edit": "Edit Direction",
+    "delete": "Delete Direction",
+    "deleteConfirm": "Are you sure you want to delete this direction?",
+    "name": "Direction Name",
+    "description": "Description",
+    "color": "Color",
+    "branches": "Branches",
+    "branchesIn": "Branches in this direction",
+    "created": "Direction created successfully",
+    "updated": "Direction updated successfully",
+    "deleted": "Direction deleted successfully"
   },
   "users": {
     "title": "Users",
@@ -155,6 +179,9 @@
   "attendance": {
     "title": "Attendance",
     "takeAttendance": "Take Attendance",
+    "selectGroup": "Select a group",
+    "openRegister": "Open register",
+    "noGroups": "No groups available",
     "attendanceFor": "Attendance for",
     "sessionDate": "Session Date",
     "classStart": "Class Start Time",
@@ -173,7 +200,20 @@
     "totalAbsent": "Total Absent",
     "totalLate": "Total Late",
     "avgLateMinutes": "Avg. Late Minutes",
-    "noSessions": "No attendance sessions found"
+    "noSessions": "No attendance sessions found",
+    "register": "Attendance Register",
+    "exportExcel": "Download Excel",
+    "selectDate": "Select date",
+    "noSchedule": "No schedule set for this group. Add a schedule to mark attendance.",
+    "noStudents": "No students enrolled in this group yet.",
+    "marked": "Marked",
+    "legend": "Click a cell to cycle: present → late → absent",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "unmarked": "Unmarked",
+    "markAllPresent": "Mark all present",
+    "saved": "Saved",
+    "noDates": "No lesson days this month."
   },
   "schedule": {
     "title": "Schedule",
@@ -220,6 +260,7 @@
     "notFound": "The requested resource was not found.",
     "required": "This field is required.",
     "minLength": "Must be at least {min} characters.",
-    "passwordMismatch": "Passwords do not match."
+    "passwordMismatch": "Passwords do not match.",
+    "fileTooLarge": "File is too large. Maximum size is 5MB."
   }
 }

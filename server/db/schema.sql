@@ -3,6 +3,21 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Directions (top-level: a Direction contains Branches)
+CREATE TABLE IF NOT EXISTS directions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  color VARCHAR(20) DEFAULT 'blue',
+  logo_url VARCHAR(500),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Ensure logo_url exists on pre-existing installations
+ALTER TABLE directions ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500);
+
 -- Branches
 CREATE TABLE IF NOT EXISTS branches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -10,10 +25,18 @@ CREATE TABLE IF NOT EXISTS branches (
   address TEXT,
   phone VARCHAR(50),
   email VARCHAR(255),
+  logo_url VARCHAR(500),
+  direction_id UUID REFERENCES directions(id) ON DELETE SET NULL,
+  colors TEXT[] DEFAULT '{}',
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure new columns exist on pre-existing installations
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500);
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS direction_id UUID REFERENCES directions(id) ON DELETE SET NULL;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS colors TEXT[] DEFAULT '{}';
 
 -- Users
 CREATE TABLE IF NOT EXISTS users (
@@ -126,6 +149,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_branches_direction ON branches(direction_id);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_branch_id ON users(branch_id);
 CREATE INDEX IF NOT EXISTS idx_groups_branch_id ON groups(branch_id);
@@ -151,6 +175,8 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS users_updated_at ON users;
 CREATE TRIGGER users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS directions_updated_at ON directions;
+CREATE TRIGGER directions_updated_at BEFORE UPDATE ON directions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 DROP TRIGGER IF EXISTS branches_updated_at ON branches;
 CREATE TRIGGER branches_updated_at BEFORE UPDATE ON branches FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 DROP TRIGGER IF EXISTS groups_updated_at ON groups;

@@ -4,8 +4,16 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { api } from '@/lib/api';
-import { formatDateTime } from '@/lib/utils';
+import { formatDateTime, cn, mediaUrl } from '@/lib/utils';
+import { colorOf, type AccentColor } from '@/lib/colors';
+import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+interface DashBranch {
+  id: string; name: string; address: string | null; logo_url: string | null; colors: string[] | null;
+  direction_name: string | null; direction_color: string | null;
+  student_count: string; teacher_count: string; group_count: string;
+}
 
 interface DashboardStats {
   stats: {
@@ -36,15 +44,17 @@ interface DashboardStats {
   }>;
 }
 
-function StatCard({ title, value, icon, color }: { title: string; value: number | string; icon: React.ReactNode; color: string }) {
+function StatCard({ title, value, icon, color }: { title: string; value: number | string; icon: React.ReactNode; color: AccentColor }) {
+  const c = colorOf(color);
   return (
-    <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 p-5">
+    <div className={cn('relative bg-white dark:bg-gray-900 rounded-lg border overflow-hidden p-5', c.border)}>
+      <div className={cn('absolute left-0 top-0 h-full w-1', c.solid)} />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{title}</p>
-          <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
+          <p className={cn('text-2xl font-semibold', c.text)}>{value}</p>
         </div>
-        <div className={`w-10 h-10 rounded flex items-center justify-center ${color}`}>
+        <div className={cn('w-10 h-10 rounded flex items-center justify-center', c.bg, c.text)}>
           {icon}
         </div>
       </div>
@@ -57,6 +67,7 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState<DashBranch[]>([]);
 
   useEffect(() => {
     api.get<DashboardStats>('/api/dashboard/stats')
@@ -64,6 +75,13 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'super_admin') return;
+    api.get<{ data: DashBranch[] }>('/api/branches', { limit: 8 })
+      .then(d => setBranches(d.data))
+      .catch(() => {});
+  }, [user]);
 
   const today = data?.attendanceToday;
   const presentN = parseInt(today?.present_count || '0');
@@ -140,7 +158,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 p-5 animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5 animate-pulse">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2" />
                 <div className="h-7 bg-gray-200 dark:bg-gray-700 rounded w-16" />
               </div>
@@ -151,34 +169,34 @@ export default function DashboardPage() {
             <StatCard
               title={t('dashboard.totalStudents')}
               value={data?.stats.students ?? 0}
-              color="bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
+              color="blue"
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
             />
             <StatCard
               title={t('dashboard.totalTeachers')}
               value={data?.stats.teachers ?? 0}
-              color="bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"
+              color="green"
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
             />
             {data?.stats.branches !== null && user?.role === 'super_admin' ? (
               <StatCard
                 title={t('dashboard.totalBranches')}
                 value={data?.stats.branches ?? 0}
-                color="bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400"
+                color="purple"
                 icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
               />
             ) : (
               <StatCard
                 title={t('dashboard.attendanceRate')}
                 value={`${attendancePct}%`}
-                color="bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+                color="red"
                 icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
               />
             )}
             <StatCard
               title={t('dashboard.totalGroups')}
               value={data?.stats.groups ?? 0}
-              color="bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
+              color="yellow"
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
             />
           </div>
@@ -186,7 +204,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's attendance pie */}
-          <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.todayAttendance')}</h2>
             {totalN === 0 ? (
               <div className="flex items-center justify-center h-40 text-sm text-gray-400">No sessions today</div>
@@ -212,7 +230,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Trend chart */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 p-5">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-5">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.attendanceTrend')}</h2>
             {trendData.length === 0 ? (
               <div className="flex items-center justify-center h-40 text-sm text-gray-400">No data available</div>
@@ -232,8 +250,58 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Branches (super admin) */}
+        {user?.role === 'super_admin' && branches.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('nav.branches')}</h2>
+              <Link href="/branches" className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                {t('common.viewAll')} →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {branches.map(b => {
+                const colors = (b.colors && b.colors.length ? b.colors : []) as string[];
+                const pc = colors.length ? colorOf(colors[0]) : null;
+                return (
+                  <Link key={b.id} href={`/branches/${b.id}`}
+                    className={cn('block bg-white dark:bg-gray-900 rounded-lg border overflow-hidden transition-shadow hover:shadow-md',
+                      pc ? pc.border : 'border-gray-200 dark:border-gray-800')}>
+                    {colors.length > 0 && (
+                      <div className="flex h-1.5 w-full">
+                        {colors.map((col, i) => <div key={i} className={cn('flex-1', colorOf(col).solid)} />)}
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={cn('w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center shrink-0', pc ? cn(pc.bg, pc.text) : 'bg-gray-100 dark:bg-gray-800 text-gray-400')}>
+                          {b.logo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={mediaUrl(b.logo_url) || ''} alt={b.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">{b.name}</h3>
+                          {b.direction_name && <p className={cn('text-xs truncate', colorOf(b.direction_color).text)}>{b.direction_name}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span><span className="font-medium text-gray-900 dark:text-white">{b.student_count}</span> {t('branches.students').toLowerCase()}</span>
+                        <span><span className="font-medium text-gray-900 dark:text-white">{b.teacher_count}</span> {t('branches.teachers').toLowerCase()}</span>
+                        <span><span className="font-medium text-gray-900 dark:text-white">{b.group_count}</span> {t('branches.groups').toLowerCase()}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Recent Activity */}
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('dashboard.recentActivity')}</h2>
           </div>

@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Table } from '@/components/ui/Table';
 import { Pagination } from '@/components/ui/Pagination';
+import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Session {
   id: string; group_id: string; group_name: string; branch_name: string;
@@ -18,10 +21,13 @@ interface Session {
   present_count: string; absent_count: string; late_count: string; total_records: string;
 }
 
+interface GroupOption { id: string; name: string; branch_name: string; }
+
 export default function AttendancePage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [total, setTotal] = useState(0);
@@ -31,6 +37,12 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+
+  // Group picker — opens the attendance register for a chosen group
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [groups, setGroups] = useState<GroupOption[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [loadingGroups, setLoadingGroups] = useState(false);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -49,6 +61,23 @@ export default function AttendancePage() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const canTake = user?.role === 'teacher' || user?.role === 'super_admin' || user?.role === 'branch_admin';
+
+  const openPicker = async () => {
+    setPickerOpen(true);
+    setSelectedGroup('');
+    setLoadingGroups(true);
+    try {
+      const data = await api.get<{ data: GroupOption[] }>('/api/groups', { is_active: true, limit: 200 });
+      setGroups(data.data);
+    } catch (err) { toast((err as Error).message, 'error'); }
+    finally { setLoadingGroups(false); }
+  };
+
+  const goToRegister = () => {
+    if (!selectedGroup) return;
+    setPickerOpen(false);
+    router.push(`/attendance/group/${selectedGroup}`);
+  };
 
   const getAttPct = (s: Session) => {
     const total = parseInt(s.total_records);
@@ -99,14 +128,12 @@ export default function AttendancePage() {
             <p className="text-sm text-gray-500 mt-0.5">{total} sessions</p>
           </div>
           {canTake && (
-            <Link href="/attendance/take">
-              <Button>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                {t('attendance.takeAttendance')}
-              </Button>
-            </Link>
+            <Button onClick={openPicker}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {t('attendance.takeAttendance')}
+            </Button>
           )}
         </div>
 
@@ -131,11 +158,32 @@ export default function AttendancePage() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           <Table columns={columns} data={sessions} loading={loading} getKey={s => s.id} emptyMessage={t('attendance.noSessions')} />
           <Pagination page={page} pages={pages} total={total} limit={limit} onChange={setPage} t={t} />
         </div>
       </div>
+
+      {/* Group picker — opens the chosen group's attendance register */}
+      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title={t('attendance.takeAttendance')} size="sm">
+        {loadingGroups ? (
+          <div className="py-8 text-center text-sm text-gray-400">{t('common.loading')}</div>
+        ) : groups.length === 0 ? (
+          <div className="py-8 text-center text-sm text-gray-400">{t('attendance.noGroups')}</div>
+        ) : (
+          <Select
+            label={t('nav.groups')}
+            value={selectedGroup}
+            onChange={e => setSelectedGroup(e.target.value)}
+            placeholder={t('attendance.selectGroup')}
+            options={groups.map(g => ({ value: g.id, label: `${g.name} — ${g.branch_name}` }))}
+          />
+        )}
+        <div className="flex gap-3 justify-end mt-5">
+          <Button variant="outline" onClick={() => setPickerOpen(false)}>{t('common.cancel')}</Button>
+          <Button onClick={goToRegister} disabled={!selectedGroup}>{t('attendance.openRegister')}</Button>
+        </div>
+      </Modal>
     </DashboardLayout>
   );
 }

@@ -117,7 +117,7 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           {loading ? (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {[...Array(5)].map((_, i) => (

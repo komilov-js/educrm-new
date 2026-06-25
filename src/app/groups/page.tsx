@@ -184,7 +184,7 @@ export default function GroupsPage() {
             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white" />
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
           <Table columns={columns} data={groups} loading={loading} getKey={g => g.id} emptyMessage={t('common.noData')} />
           <Pagination page={page} pages={pages} total={total} limit={limit} onChange={setPage} t={t} />
         </div>
